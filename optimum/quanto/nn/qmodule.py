@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 import torch
@@ -33,7 +33,7 @@ from ..tensor import (
     quantize_activation,
     quantize_weight,
 )
-
+from ..tensor.optimizers import AdaptiveAxisOptimizer
 
 __all__ = ["QModuleMixin", "register_qmodule", "quantize_module"]
 
@@ -62,7 +62,9 @@ def register_qmodule(module_cls):
                     module: torch.nn.Module,
                     weights: Optional[qtype],
                     activations: Optional[qtype] = None,
-                    optimizer: Optional[Optimizer] = None):
+                    optimizer: Optional[Optimizer] = None,
+                    device: Optional[torch.device] = None,
+                    name: Optional[str] = None):
             ...
 
         def forward(self, input: torch.Tensor) -> torch.Tensor:
@@ -116,6 +118,7 @@ class QModuleMixin(ABC):
             weights = qtypes[weights]
         if activations is not None and not isinstance(activations, qtype):
             activations = qtypes[activations]
+        
         self.weight_qtype = weights
         self.weight_group_size = None
         if self.weight_qtype in (qint2, qint4):
@@ -211,9 +214,10 @@ class QModuleMixin(ABC):
         weights: Optional[qtype] = None,
         activations: Optional[qtype] = None,
         optimizer: Optional[Optimizer] = None,
-    ):
+        name: Optional[str] = None,
+    ):  
         # Create the quantized module on the meta device to prevent weights intialization
-        qmodule = cls.qcreate(module, weights, activations, optimizer, device="meta")
+        qmodule = cls.qcreate(module, weights, activations, optimizer, device="meta", name=name)
         if qmodule is None:
             return None
         # Move the quantized module to the target device, but with empty weights
@@ -230,6 +234,7 @@ class QModuleMixin(ABC):
         return qmodule.to(device)
 
     @classmethod
+    @abstractmethod
     def qcreate(
         cls,
         module: torch.nn.Module,
@@ -237,7 +242,18 @@ class QModuleMixin(ABC):
         activations: Optional[qtype] = None,
         optimizer: Optional[Optimizer] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = None,
     ):
+        """Create a quantized module from a regular module.
+
+        Args:
+            module: The module to quantize
+            weights: The quantization type for weights
+            activations: The quantization type for activations
+            optimizer: The optimizer to use for quantization
+            device: The device to create the module on
+            name: The name of the module
+        """
         raise NotImplementedError
 
     @property
@@ -260,14 +276,18 @@ class QModuleMixin(ABC):
         if isinstance(self.optimizer, SymmetricOptimizer):
             scale = self.optimizer(self.weight, qtype=self.weight_qtype, axis=0)
             shift = None
+            _axis = 0
+        elif isinstance(self.optimizer, AdaptiveAxisOptimizer):
+            scale, shift, _axis = self.optimizer(self.weight, qtype=self.weight_qtype, axis=0, layer_name=self.name, group_size=self.weight_group_size)
         else:
             scale, shift = self.optimizer(
                 self.weight, qtype=self.weight_qtype, axis=0, group_size=self.weight_group_size
             )
+            _axis = 0
         return quantize_weight(
             self.weight,
             qtype=self.weight_qtype,
-            axis=0,
+            axis=_axis,
             scale=scale,
             shift=shift,
             group_size=self.weight_group_size,

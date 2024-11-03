@@ -33,11 +33,12 @@ class QLayerNorm(QModuleMixin, torch.nn.LayerNorm):
         activations: Optional[qtype] = None,
         optimizer: Optional[Optimizer] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = None,
     ):
         if activations is None:
             return None
         dtype = None if module.weight is None else module.weight.dtype
-        return cls(
+        _obj = cls(
             module.normalized_shape,
             module.eps,
             module.elementwise_affine,
@@ -48,6 +49,8 @@ class QLayerNorm(QModuleMixin, torch.nn.LayerNorm):
             activations=activations,
             optimizer=None,  # We never quantize QLayerNorm weights
         )
+        _obj.name = name
+        return _obj
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return torch.nn.functional.layer_norm(input, self.normalized_shape, self.weight, self.bias, self.eps)

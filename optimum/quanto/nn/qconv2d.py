@@ -33,8 +33,9 @@ class QConv2d(QModuleMixin, torch.nn.Conv2d):
         activations: Optional[qtype] = None,
         optimizer: Optional[Optimizer] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = None,
     ):
-        return cls(
+        _obj = cls(
             in_channels=module.in_channels,
             out_channels=module.out_channels,
             kernel_size=module.kernel_size,
@@ -50,6 +51,8 @@ class QConv2d(QModuleMixin, torch.nn.Conv2d):
             activations=activations,
             optimizer=optimizer,
         )
+        _obj.name = name
+        return _obj 
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return self._conv_forward(input, self.qweight, self.bias)

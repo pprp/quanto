@@ -33,8 +33,9 @@ class QLinear(QModuleMixin, torch.nn.Linear):
         activations: Optional[qtype] = None,
         optimizer: Optional[Optimizer] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = None,
     ):
-        return cls(
+        _obj = cls(
             module.in_features,
             module.out_features,
             module.bias is not None,
@@ -45,6 +46,8 @@ class QLinear(QModuleMixin, torch.nn.Linear):
             optimizer=optimizer,
             quantize_input=True,
         )
+        _obj.name = name
+        return _obj
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return torch.nn.functional.linear(input, self.qweight, bias=self.bias)
