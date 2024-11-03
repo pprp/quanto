@@ -18,3 +18,4 @@ from .hqq_optimizer import *
 from .max_optimizer import *
 from .optimizer import *
 from .symmetric_optimizer import *
+from .adaptive_axis_optimizer import *
