@@ -14,7 +14,7 @@ from optimum.quanto import (
     freeze,
     MaxOptimizer
 )
-from optimum.quanto.tensor.optimizers import AdaptiveAxisOptimizer, MaxOptimizer
+from optimum.quanto.tensor.optimizers import AdaptiveAxisOptimizer, AbsmaxOptimizer, MaxOptimizer, AffineOptimizer, SymmetricOptimizer, HqqOptimizer
 
 def set_seed(seed):
     """Set random seeds for reproducibility"""
@@ -114,7 +114,7 @@ def evaluate_perplexity(model, tokenizer, device):
     
     return ppl.item()
 
-def calibrate_model(model, tokenizer, device, batch_size=4, num_samples=100):
+def calibrate_model(model, tokenizer, device, batch_size=1, num_samples=50):
     """Calibrate model using WikiText2 dataset"""
     print("Calibrating model...")
     cal_dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="validation")
@@ -123,20 +123,34 @@ def calibrate_model(model, tokenizer, device, batch_size=4, num_samples=100):
         model.eval()
         total = 0
         for batch in tqdm(cal_dataset.iter(batch_size=batch_size), desc="Calibrating"):
-            inputs = tokenizer(
-                batch["text"], 
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=512
-            )
-            input_ids = inputs.input_ids.to(device)
-            attention_mask = inputs.attention_mask.to(device)
+            # Clear CUDA cache before processing each batch
+            torch.cuda.empty_cache()
             
-            with torch.no_grad():
-                model(input_ids, attention_mask=attention_mask)
+            try:
+                inputs = tokenizer(
+                    batch["text"], 
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=256
+                )
+                input_ids = inputs.input_ids.to(device)
+                attention_mask = inputs.attention_mask.to(device)
                 
-            total += input_ids.size(0)
+                with torch.no_grad():
+                    # Process in smaller chunks if needed
+                    model(input_ids, attention_mask=attention_mask)
+                    
+                total += input_ids.size(0)
+                
+                # Free up memory
+                del input_ids, attention_mask, inputs
+                torch.cuda.empty_cache()
+                
+            except RuntimeError as e:
+                print(f"Error during calibration: {e}")
+                continue
+                
             if total >= num_samples:
                 break
 
@@ -182,7 +196,7 @@ def main():
     
     # 5. 创建adaptive optimizer
     adaptive_optimizer = AdaptiveAxisOptimizer(
-        base_optimizer=MaxOptimizer(),
+        # base_optimizer=MaxOptimizer(),
         axis_mapping={},
         pattern_mapping={
             config["pattern"]: config["axis"]
@@ -195,7 +209,7 @@ def main():
     quantize(
         model,
         weights=qint4,
-        optimizer=adaptive_optimizer
+        optimizer=adaptive_optimizer,
     )
     
     # 7. 校准模型
