@@ -27,12 +27,12 @@ __all__ = ["ActivationQBytesTensor"]
 
 class ActivationQBytesQuantizer(Function):
     @staticmethod
-    def forward(ctx, base: torch.Tensor, qtype: qtype, scale: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, base: torch.Tensor, qtype: qtype, scale: torch.Tensor, axis: int=None) -> torch.Tensor:
         if qtype.bits != 8:
             raise ValueError("QBytesTensor can only be of 8-bit qtype")
         size = base.size()
         stride = base.stride()
-        data = torch.ops.quanto.quantize_symmetric(base, dtype=qtype.dtype, axis=None, scale=scale)
+        data = torch.ops.quanto.quantize_symmetric(base, dtype=qtype.dtype, axis=axis, scale=scale)
         # The instantiation of the quantized tensor must happen within the context of the Function
         # for the autograd magic to work.
         return ActivationQBytesTensor(qtype, size, stride, data, scale)

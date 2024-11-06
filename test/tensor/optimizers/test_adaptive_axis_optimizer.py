@@ -12,7 +12,8 @@ from optimum.quanto import (
     quantize,
     Calibration,
     freeze,
-    MaxOptimizer
+    MaxOptimizer,
+    qint8
 )
 from optimum.quanto.tensor.optimizers import AdaptiveAxisOptimizer, AbsmaxOptimizer, MaxOptimizer, AffineOptimizer, SymmetricOptimizer, HqqOptimizer
 
@@ -209,6 +210,7 @@ def main():
     quantize(
         model,
         weights=qint4,
+        activations=qint8,
         optimizer=adaptive_optimizer,
     )
     

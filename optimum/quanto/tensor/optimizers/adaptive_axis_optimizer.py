@@ -53,8 +53,6 @@ class AdaptiveAxisOptimizer(Optimizer):
         """
         if layer_name is not None:
             axis = self._get_axis_for_layer(layer_name)
-            print("======>", axis)
-        # breakpoint() 
         
         if axis not in [0, -1]:
             raise ValueError("axis parameter must be 0 (first axis) or -1 (last axis)")
