@@ -36,4 +36,4 @@ def quantize_activation(t: torch.Tensor, qtype: qtype, scale: torch.Tensor, axis
     """
     if scale.numel() != 1:
         raise ValueError("Parameter scale must be a scalar because activations can only be quantized per-tensor")
-    return ActivationQBytesTensor.quantize(t, qtype, scale) # axis is set to None by default
+    return ActivationQBytesTensor.quantize(t, qtype, scale, axis) # axis is set to None by default

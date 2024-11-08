@@ -307,11 +307,6 @@ class QModuleMixin(ABC):
                     f" expected {self.activation_qtype.name} input but got {input.qtype.name} instead."
                 )
         else:
-            print("input:", input.shape)
-            if kurtosis_axis_metric(input, axis=0) > kurtosis_axis_metric(input, axis=1):
-                axis = -1
-            else:
-                axis = 0            
             axis = None
             input = quantize_activation(input, qtype=self.activation_qtype, scale=self.input_scale, axis=axis)
         return input
@@ -322,12 +317,7 @@ class QModuleMixin(ABC):
         input: torch.Tensor,
         output: torch.Tensor,
     ) -> torch.Tensor:
-        if kurtosis_axis_metric(output, axis=0) > kurtosis_axis_metric(output, axis=1):
-            axis = -1 
-        else:
-            axis = 0
-        print("output:", output.shape)
-        axis = None 
+        axis = None
         return quantize_activation(output, qtype=self.activation_qtype, scale=self.output_scale, axis=axis)
 
     def freeze(self):

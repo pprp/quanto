@@ -22,7 +22,8 @@ def variance_axis_metric(weight: torch.Tensor, axis: int = 0) -> torch.Tensor:
         # For 3D tensors, compute variance along batch dimension first
         weight = torch.var(weight, dim=0, unbiased=False)
     variance = torch.var(weight, dim=1 if axis == 0 else -1, unbiased=False)
-    return torch.mean(variance)
+    # breakpoint()
+    return torch.var(variance)
 
 def std_axis_metric(weight: torch.Tensor, axis: int = 0) -> torch.Tensor:
     """Compute standard deviation along specified axis and average across dimensions
@@ -79,6 +80,7 @@ def kurtosis_axis_metric(weight: torch.Tensor, axis: int = 0) -> torch.Tensor:
     - axis=-1 computes along 11080 dimension
     Returns a scalar value.
     """
+    # breakpoint()
     if len(weight.shape) == 3:
         # Compute kurtosis for each batch then average
         mean = torch.mean(weight, dim=0, keepdim=True)

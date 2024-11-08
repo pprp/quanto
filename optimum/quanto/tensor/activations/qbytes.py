@@ -55,8 +55,8 @@ class ActivationQBytesTensor(QBytesTensor):
         super().__init__(qtype, None, size, stride, data, scale, requires_grad)
 
     @classmethod
-    def quantize(cls, base: torch.Tensor, qtype: qtype, scale: torch.Tensor) -> torch.Tensor:
-        return ActivationQBytesQuantizer.apply(base, qtype, scale)
+    def quantize(cls, base: torch.Tensor, qtype: qtype, scale: torch.Tensor, axis: int=None) -> torch.Tensor:
+        return ActivationQBytesQuantizer.apply(base, qtype, scale, axis)
 
     def __tensor_flatten__(self):
         inner_tensors = ["_data", "_scale"]
