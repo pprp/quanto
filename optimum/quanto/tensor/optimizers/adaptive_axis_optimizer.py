@@ -27,15 +27,15 @@ class AdaptiveAxisOptimizer(Optimizer):
     def _get_axis_for_layer(self, layer_name: str) -> int:
         """Determine quantization axis based on layer name"""
         
-        # 1. Direct match
-        if layer_name in self.axis_mapping:
-            return self.axis_mapping[layer_name]
-            
-        # 2. Pattern match
         for pattern, axis in self.pattern_mapping.items():
             if re.match(pattern, layer_name):
+                # print(f"\033[32mPattern match found for {layer_name} using pattern {pattern}\033[0m")
                 return axis
-                
+        
+        if layer_name.startswith("single"):
+            breakpoint() 
+            
+        # print(f"\033[31mNo match found for |{layer_name}|, using default axis\033[0m")
         # 3. Default to per-channel
         return 0
     
